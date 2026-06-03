@@ -1,0 +1,19 @@
+# InfluxDB-enabled values - use with:
+# helm install avalanche ./helm/avalanche -f ./helm/avalanche/values-influxdb.yaml
+
+global:
+  imagePullPolicy: Never
+  logLevel: info
+
+database:
+  type: influxdb
+  influxdb:
+    url: "http://influxdb:8086"
+    # Token should be provided via --set or secrets
+    # token: "your-token-here"
+    org: "snowplow"
+    bucket: "avalanche-metrics"
+
+# Enable aggregator when using InfluxDB (computes percentiles at write-time)
+aggregator:
+  enabled: true

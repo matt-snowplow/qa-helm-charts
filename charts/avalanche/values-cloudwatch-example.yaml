@@ -1,0 +1,41 @@
+# Example values overlay for the CloudWatch-mode Kubernetes observer (QA-822).
+#
+# Use:
+#   helm install avalanche ./helm \
+#     -f ./helm/values.yaml \
+#     -f ./helm/values-cloudwatch-example.yaml \
+#     --set observerKubernetes.serviceAccount.iamRoleArn=arn:aws:iam::123456789012:role/avalanche-observer-cloudwatch
+#
+# The IAM role must be configured for IRSA against this cluster's OIDC provider
+# and bound to the avalanche-observer-kubernetes ServiceAccount in the release
+# namespace. See docs/observer-cloudwatch-iam-policy.md for the policy and
+# trust-policy templates.
+
+observerKubernetes:
+  enabled: true
+  # api stays on for native K8s metrics (Pod Health, deployment status,
+  # warning/error events, per-pod CPU/memory in millicores). Disable if
+  # cluster-edit RBAC isn't available — cloudwatch alone still gives a
+  # useful subset.
+  api:
+    enabled: true
+  cloudwatch:
+    enabled: true
+    pollInterval: "60s"
+    # Mixed-kind example (QA-828): one container_insights target observing
+    # pod metrics from prod1-eks, one kinesis_stream target observing the
+    # raw collector stream's runtime metrics. Both authenticate via the
+    # same IRSA role — the IAM policy in
+    # docs/observer-cloudwatch-iam-policy.md covers both kinds.
+    targets:
+      - kind: container_insights     # default if omitted; explicit here for clarity
+        region: "eu-central-1"
+        clusterName: "sp-com-snplow-qa-aws-prod1-eks-cluster"
+        namespace: "com-snplow-qa-aws-prod1"
+        podNameInclude: ""             # match all pods reporting in the namespace
+        podNameExclude: "^observer-"   # filter out the observer's own pod (default)
+      - kind: kinesis_stream
+        region: "eu-central-1"
+        streamName: "kns-com-snplow-qa-aws-qa-EXAMPLE-raw"
+  serviceAccount:
+    iamRoleArn: ""  # REQUIRED — set via --set or in your overlay

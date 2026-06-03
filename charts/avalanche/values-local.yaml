@@ -1,0 +1,23 @@
+# Local Kubernetes development values - use with:
+# helm install avalanche ./helm -f ./helm/values-local.yaml
+#
+# This file configures Avalanche for local Kubernetes (Docker Desktop, minikube, kind)
+# with locally-built images (imagePullPolicy: Never)
+#
+# Build images first: make container-build-all
+
+images:
+  # Use locally-built images (don't pull from registry)
+  pullPolicy: Never
+  logLevel: info
+  # Same registry prefix as DockerHub - images just aren't pushed
+  registry: "snowplow"
+
+# In production (DS4) the cloud service account is provisioned externally with
+# IAM role / Workload Identity annotations. The chart references it by name but
+# does not create it. For local kind clusters nothing creates this SA, so pods
+# get stuck in FailedCreate ("service account not found"). Unsetting the name
+# makes each deployment template skip the serviceAccountName directive and
+# fall back to the namespace's default SA, which is fine for local testing.
+cloudserviceaccount:
+  name: ""

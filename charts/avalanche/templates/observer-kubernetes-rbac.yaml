@@ -1,0 +1,86 @@
+{{- if .Values.observerKubernetes.enabled }}
+# Dedicated ServiceAccount for the observer-kubernetes pods — created ONLY when
+# cloudserviceaccount is NOT deployed (sandbox/local, where AWS creds are
+# injected directly). When cloudserviceaccount IS deployed (DS4/IRSA), the pods
+# reuse it instead (see the avalanche.observerKubernetes.serviceAccountName
+# helper) so they inherit its Timestream IRSA role. Creating a separate,
+# un-annotated SA in the IRSA case made the pod fall back to the node role and
+# crash-loop on a Timestream 403 (QA-1038).
+{{- if not .Values.cloudserviceaccount.deploy }}
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ include "avalanche.fullname" . }}-observer-kubernetes
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "snowplow.labels" . | nindent 4 }}
+    app.kubernetes.io/component: observer-kubernetes
+  {{- if .Values.observerKubernetes.serviceAccount.iamRoleArn }}
+  annotations:
+    eks.amazonaws.com/role-arn: {{ .Values.observerKubernetes.serviceAccount.iamRoleArn | quote }}
+  {{- end }}
+{{- end }}
+{{- if .Values.observerKubernetes.api.enabled }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ include "avalanche.fullname" . }}-observer-kubernetes
+  labels:
+    {{- include "snowplow.labels" . | nindent 4 }}
+    app.kubernetes.io/component: observer-kubernetes
+rules:
+  # Pod metrics - required for pod status and health monitoring
+  - apiGroups: [""]
+    resources:
+      - pods
+      - pods/status
+    verbs: ["get", "list", "watch"]
+  # Deployment metrics - required for deployment status monitoring
+  - apiGroups: ["apps"]
+    resources:
+      - deployments
+      - deployments/status
+      - replicasets
+      - replicasets/status
+    verbs: ["get", "list", "watch"]
+  # Event metrics - required for monitoring warnings and errors
+  - apiGroups: [""]
+    resources:
+      - events
+    verbs: ["get", "list", "watch"]
+  # Node metrics - optional, for cluster-wide resource monitoring
+  - apiGroups: [""]
+    resources:
+      - nodes
+      - nodes/status
+    verbs: ["get", "list", "watch"]
+  # Namespace access - for namespace-scoped queries
+  - apiGroups: [""]
+    resources:
+      - namespaces
+    verbs: ["get", "list", "watch"]
+  # Metrics-server access - for CPU/memory utilization
+  - apiGroups: ["metrics.k8s.io"]
+    resources:
+      - pods
+      - nodes
+    verbs: ["get", "list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ include "avalanche.fullname" . }}-observer-kubernetes
+  labels:
+    {{- include "snowplow.labels" . | nindent 4 }}
+    app.kubernetes.io/component: observer-kubernetes
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ include "avalanche.fullname" . }}-observer-kubernetes
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "avalanche.observerKubernetes.serviceAccountName" . }}
+    namespace: {{ .Release.Namespace }}
+{{- end }}
+{{- end }}
