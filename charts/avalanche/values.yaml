@@ -23,7 +23,7 @@ legacyMode: true
 #
 #   small  — smoke tests, kind/docker-desktop  (~100 RPS injector ceiling)
 #   medium — sustained multi-k RPS             (~2000 RPS target — default)
-#   large  — high-throughput perf baselines    (3 injector replicas)
+#   large  — high-throughput perf baselines    (1 injector @ 4 CPU / 100 workers)
 sizingPreset: medium  # small | medium | large
 
 # Sizing presets — see ticket QA-780 for the rationale behind these values.
@@ -67,11 +67,6 @@ presets:
         requests: { cpu: "100m", memory: "64Mi" }
         limits:   { cpu: "500m", memory: "256Mi" }
     observerKubernetes:
-      replicas: 1
-      resources:
-        requests: { cpu: "100m", memory: "64Mi" }
-        limits:   { cpu: "500m", memory: "256Mi" }
-    mockTarget:
       replicas: 1
       resources:
         requests: { cpu: "100m", memory: "64Mi" }
@@ -124,11 +119,6 @@ presets:
       resources:
         requests: { cpu: "100m", memory: "128Mi" }
         limits:   { cpu: "500m", memory: "256Mi" }
-    mockTarget:
-      replicas: 1
-      resources:
-        requests: { cpu: "200m", memory: "128Mi" }
-        limits:   { cpu: "1000m", memory: "512Mi" }
     nats:
       replicas: 1
       resources:
@@ -182,11 +172,6 @@ presets:
       resources:
         requests: { cpu: "200m", memory: "256Mi" }
         limits:   { cpu: "1000m", memory: "512Mi" }
-    mockTarget:
-      replicas: 1
-      resources:
-        requests: { cpu: "500m", memory: "256Mi" }
-        limits:   { cpu: "2000m", memory: "1Gi" }
     nats:
       replicas: 1
       resources:
@@ -703,11 +688,13 @@ observerKubernetes:
       events: true
       resources: true  # Requires metrics-server
   serviceAccount:
-    # IRSA role ARN annotated on the shared ServiceAccount when
-    # cloudwatch.enabled is true. Required in that case; ignored otherwise.
-    # The same SA is bound to the api-mode ClusterRole when api.enabled, so
-    # both observer pods (when both are deployed) share one SA with both
-    # IRSA + ClusterRole privileges available.
+    # IRSA role ARN. Annotated on the observer-kubernetes ServiceAccount
+    # whenever it is set — applies to api-mode and/or cloudwatch-mode, not
+    # cloudwatch-only (required for the cloudwatch observer to read CloudWatch;
+    # also usable by the api observer if it needs AWS access). Only applied to a
+    # dedicated SA when cloudserviceaccount.deploy is false; when
+    # cloudserviceaccount is deployed, observer-kubernetes reuses it and inherits
+    # its IRSA role instead, so this field is not used in that case.
     iamRoleArn: ""
   # {} = inherit from sizingPreset; set requests/limits to override.
   resources: {}
