@@ -269,6 +269,12 @@ data:
       {{- if .Values.observerKubernetes.config.podNameReplacement }}
       pod_name_replacement: {{ .Values.observerKubernetes.config.podNameReplacement | quote }}
       {{- end }}
+      {{- if .Values.observerKubernetes.config.podNameInclude }}
+      pod_name_include: {{ .Values.observerKubernetes.config.podNameInclude | quote }}
+      {{- end }}
+      {{- if .Values.observerKubernetes.config.podNameExclude }}
+      pod_name_exclude: {{ .Values.observerKubernetes.config.podNameExclude | quote }}
+      {{- end }}
       metrics:
         pods: {{ .Values.observerKubernetes.config.metrics.pods }}
         deployments: {{ .Values.observerKubernetes.config.metrics.deployments }}

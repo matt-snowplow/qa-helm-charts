@@ -722,6 +722,14 @@ observerKubernetes:
     namespaces: []  # List of specific namespaces to monitor
     labelSelector: ""  # Kubernetes label selector (e.g., "app=snowplow")
     fieldSelector: ""  # Kubernetes field selector
+    # QA-1057: scope which pods are RECORDED (not just which namespace is
+    # watched), mirroring the cloudwatch observer's podNameInclude. Go regexes
+    # matched against the pod name. Empty include = record all; empty exclude =
+    # exclude none. Snowman sets podNameInclude to the run's qa-<hash> prefix so
+    # a shared namespace (DS4's com-snplow-qa-aws-prod1) yields only the
+    # pipeline-under-test + co-located avalanche pods, not every unrelated pod.
+    podNameInclude: ""
+    podNameExclude: ""
     # Polling configuration
     pollInterval: "10s"
     # podNamePattern / podNameReplacement: regex fallback used by RoleResolver
