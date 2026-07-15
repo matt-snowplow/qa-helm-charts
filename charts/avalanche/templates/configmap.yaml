@@ -239,6 +239,13 @@ data:
     type: {{ .Values.observerKubernetes.config.type | quote }}
     name: {{ .Values.observerKubernetes.config.name | quote }}
     config:
+      {{- if eq (.Values.observerKubernetes.rbac.scope | default "cluster") "namespace" }}
+      # QA-1057: namespace scope forces the observer to its own release namespace
+      # so the namespaced Role (observer-kubernetes-rbac.yaml) can authorize its
+      # List calls. An empty namespace would trigger a cluster-wide Pods("").List()
+      # → 403 under a namespaced Role. config.namespace/namespaces are ignored here.
+      namespace: {{ .Release.Namespace | quote }}
+      {{- else }}
       {{- if .Values.observerKubernetes.config.namespace }}
       namespace: {{ .Values.observerKubernetes.config.namespace | quote }}
       {{- end }}
@@ -247,6 +254,7 @@ data:
         {{- range .Values.observerKubernetes.config.namespaces }}
         - {{ . | quote }}
         {{- end }}
+      {{- end }}
       {{- end }}
       {{- if .Values.observerKubernetes.config.labelSelector }}
       label_selector: {{ .Values.observerKubernetes.config.labelSelector | quote }}
