@@ -271,6 +271,18 @@ observer:
   # 0 = inherit from sizingPreset; set to a non-zero value to override.
   replicas: 0
   componentId: "k8s-observer"
+  # Async Timestream/InfluxDB write-buffer tuning (QA-1220). Empty = inherit the
+  # binary defaults (batchSize 50, workers 4, bufferSize 10000, flushInterval 100ms).
+  # The observer drains observations to the backend through this buffer; when its
+  # throughput (~workers x batchSize / write-latency) is below the offered rate the
+  # queue fills and observations are dropped, capping measurable throughput. Raise
+  # batchSize toward the Timestream 100-record WriteRecords max and add workers to
+  # lift that ceiling. Set fields to override.
+  writeBuffer: {}
+    # batchSize: 100
+    # workers: 16
+    # bufferSize: 10000
+    # flushInterval: "100ms"
   config:
     type: "mockserver"
     name: "k8s-observer"
@@ -311,18 +323,6 @@ correlator:
   # Metrics write interval in seconds (how often to write aggregated stats to database)
   # Lower values give more granular data but increase database load
   metricsWriteIntervalSeconds: 30
-  # Async Timestream/InfluxDB write-buffer tuning (QA-1220). Empty = inherit the
-  # binary defaults (batchSize 50, workers 4, bufferSize 10000, flushInterval 100ms).
-  # The write buffer drains observations to the backend; when its throughput
-  # (~workers x batchSize / write-latency) is below the offered rate the queue
-  # fills and observations are dropped, capping measurable throughput. Raise
-  # batchSize toward the Timestream 100-record WriteRecords max and add workers
-  # to lift that ceiling. Set fields to override.
-  writeBuffer: {}
-    # batchSize: 100
-    # workers: 16
-    # bufferSize: 10000
-    # flushInterval: "100ms"
   config:
     type: "default"
     name: "k8s-correlator"
