@@ -59,6 +59,24 @@ spec:
             - name: AVALANCHE_METRICS_WRITE_INTERVAL_SECONDS
               value: {{ .Values.correlator.metricsWriteIntervalSeconds | quote }}
             {{- end }}
+            {{- with .Values.correlator.writeBuffer }}
+            {{- if .batchSize }}
+            - name: AVALANCHE_WRITE_BUFFER_BATCH_SIZE
+              value: {{ .batchSize | quote }}
+            {{- end }}
+            {{- if .workers }}
+            - name: AVALANCHE_WRITE_BUFFER_WORKERS
+              value: {{ .workers | quote }}
+            {{- end }}
+            {{- if .bufferSize }}
+            - name: AVALANCHE_WRITE_BUFFER_SIZE
+              value: {{ .bufferSize | quote }}
+            {{- end }}
+            {{- if .flushInterval }}
+            - name: AVALANCHE_WRITE_BUFFER_FLUSH_INTERVAL
+              value: {{ .flushInterval | quote }}
+            {{- end }}
+            {{- end }}
             {{- include "avalanche.databaseEnv" . | nindent 12 }}
             {{- include "avalanche.awsEnv" . | nindent 12 }}
           volumeMounts:
