@@ -256,9 +256,21 @@ injector:
     # (or leaving delivery unset) keeps the default endpoint-based delivery.
     # delivery:
     #   mode: "kinesis"           # "http" (default) or "kinesis"
-    #   streamArn: ""             # raw collector_payloads stream ARN (required when mode: kinesis)
+    #   streamArn: ""             # target stream ARN (required when mode: kinesis) - see format
     #   region: ""                # AWS region of the stream (required when mode: kinesis)
     #   partitionKey: "random"    # "random" (default) or "correlation_id"
+    #   format: ""                # record format, kinesis mode only:
+    #                             #   "collector_payload" (default) - CollectorPayload
+    #                             #     Thrift, so streamArn must be the RAW
+    #                             #     collector_payloads stream
+    #                             #   "enriched_tsv" - Snowplow enriched TSV, so
+    #                             #     streamArn must be the ENRICHED stream. Skips
+    #                             #     collector and enrich entirely, which is what
+    #                             #     lets a component downstream of enrich be
+    #                             #     measured on its own (QA-1315).
+    #                             # Nothing validates ARN against format: point them at
+    #                             # different streams and records are written that no
+    #                             # consumer can parse, with no error anywhere.
     # Protocol for HTTP injector type (not used by snowplow type).
     protocol: "http"
     # 0 = inherit from sizingPreset; set to a non-zero value to override.
@@ -270,6 +282,26 @@ injector:
     # generator:
     #   preset: "typical-web"
     #   seed: 0
+    #   source: ""                # event source. "" (default) = the weighted preset
+    #                             # stream. "signals" = the bounded-entity Signals
+    #                             # stream, which is required for Signals attribute
+    #                             # updates to land: the default stream mints a fresh
+    #                             # domain_userid per event, so every attribute key is
+    #                             # written once and never revisited and the Signals
+    #                             # API serves an effectively static cache while
+    #                             # looking entirely healthy (QA-1289).
+    #   signalsPoolSize: 0        # distinct domain_userids the Signals source cycles
+    #                             # through. Required when source is "signals" - no
+    #                             # default, deliberately: it is a LOAD-SHAPING knob,
+    #                             # since distinct entity count drives attribute-store
+    #                             # key count, the stated Signals ceiling. It also sets
+    #                             # the warm-up period - the pool is walked
+    #                             # round-robin, so every entity has been written after
+    #                             # signalsPoolSize events and stays warm thereafter.
+    #   signalsRunID: ""          # scopes the entity namespace to one run. MUST match
+    #                             # the run id the Signals API observer is given: both
+    #                             # sides compute entity ids independently from config,
+    #                             # with no runtime discovery channel between them.
   # {} = inherit from sizingPreset; set requests/limits to override.
   resources: {}
 

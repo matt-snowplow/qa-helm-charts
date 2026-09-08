@@ -28,12 +28,24 @@ data:
         {{- fail (printf "injector.config.delivery.mode must be \"http\" or \"kinesis\", got %q" $deliveryMode) }}
       {{- end }}
       {{- if eq $deliveryMode "kinesis" }}
-      {{- /* Collector-less: write straight to the raw Kinesis stream; endpoint is not rendered. */}}
+      {{- /* Collector-less: write straight to a Kinesis stream; endpoint is not rendered.
+             The record format decides WHICH stream is the valid target:
+               collector_payload (default) -> the raw collector_payloads stream
+               enriched_tsv               -> the enriched stream (QA-1315)
+             The chart cannot check that the ARN matches the format, so a mismatch
+             is silent: records are written and nothing downstream can read them. */}}
+      {{- $deliveryFormat := ($delivery.format | default "") }}
+      {{- if and (ne $deliveryFormat "") (not (has $deliveryFormat (list "collector_payload" "enriched_tsv"))) }}
+        {{- fail (printf "injector.config.delivery.format must be \"collector_payload\" or \"enriched_tsv\", got %q" $deliveryFormat) }}
+      {{- end }}
       delivery:
         mode: "kinesis"
         stream_arn: {{ required "injector.config.delivery.streamArn is required when delivery.mode is kinesis" $delivery.streamArn | quote }}
         region: {{ required "injector.config.delivery.region is required when delivery.mode is kinesis" $delivery.region | quote }}
         partition_key: {{ $delivery.partitionKey | default "random" | quote }}
+        {{- if $deliveryFormat }}
+        format: {{ $deliveryFormat | quote }}
+        {{- end }}
       {{- else if .Values.mockTarget.enabled }}
       endpoint: "http://{{ include "avalanche.fullname" . }}-mock-target:{{ .Values.mockTarget.port }}"
       {{- else if .Values.injector.config.endpoint }}
@@ -56,6 +68,20 @@ data:
         {{- end }}
         {{- if hasKey .Values.injector.config.generator "seed" }}
         seed: {{ .Values.injector.config.generator.seed }}
+        {{- end }}
+        {{- /* QA-1289/QA-1290: select an alternative event source. Empty (absent)
+               keeps the weighted go-event-generator stream, so the collector and
+               enrich injectors render exactly as before. `signals` selects the
+               bounded-entity Signals stream. ordinal/ordinal_count are NOT
+               rendered here - the controller assigns them at runtime over NATS. */}}
+        {{- if .Values.injector.config.generator.source }}
+        source: {{ .Values.injector.config.generator.source | quote }}
+        {{- end }}
+        {{- if .Values.injector.config.generator.signalsPoolSize }}
+        signals_pool_size: {{ .Values.injector.config.generator.signalsPoolSize }}
+        {{- end }}
+        {{- if .Values.injector.config.generator.signalsRunID }}
+        signals_run_id: {{ .Values.injector.config.generator.signalsRunID | quote }}
         {{- end }}
       {{- end }}
   {{- end }}
