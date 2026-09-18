@@ -58,6 +58,12 @@ enabled (QA-1121).
 {{- end -}}
 {{- end }}
 
+{{- define "avalanche.observerSignals.serviceAccountName" -}}
+{{- if .Values.cloudserviceaccount.deploy -}}
+{{- required "cloudserviceaccount.name is required when cloudserviceaccount.deploy is true (observer-signals reuses that ServiceAccount for its Timestream IRSA role)" .Values.cloudserviceaccount.name -}}
+{{- end -}}
+{{- end }}
+
 {{/*
 Create chart name and version as used by the chart label.
 */}}
