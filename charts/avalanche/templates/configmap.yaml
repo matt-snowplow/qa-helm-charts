@@ -430,3 +430,44 @@ data:
       timeout: "30s"
       underlying_type: "prometheus-jvm"
   {{- end }}
+  {{- /*
+  Signals API observer (QA-1291). Same two-file shape as the prometheus pair:
+  observer-signals.yaml is the real config the pod self-loads via --config;
+  external-observer-signals.yaml is the "external" stub the TEST PLAN
+  references, so the controller coordinates the (self-configured) pod over NATS
+  for phase transitions. underlying_type is what IsNonGatingType matches on in
+  managed/DS4 mode, so a run never health-gates on this observer.
+
+  A Helm comment, not a "#" comment: the latter renders into the ConfigMap even
+  when the observer is disabled, which would make this change non-inert for the
+  collector and enrich charts.
+  */ -}}
+  {{- if .Values.observerSignals.enabled }}
+  observer-signals.yaml: |
+    type: {{ .Values.observerSignals.config.type | quote }}
+    name: {{ .Values.observerSignals.config.name | quote }}
+    config:
+      base_url: {{ required "observerSignals.config.baseURL is required when observerSignals.enabled is true (use the IN-CLUSTER Signals service, not the ingress - QA-1287)" .Values.observerSignals.config.baseURL | quote }}
+      console_url: {{ .Values.observerSignals.config.consoleURL | quote }}
+      run_id: {{ required "observerSignals.config.runID is required and MUST match injector generator.signalsRunID (QA-1289)" .Values.observerSignals.config.runID | quote }}
+      pool_size: {{ required "observerSignals.config.poolSize is required and MUST match injector generator.signalsPoolSize" .Values.observerSignals.config.poolSize }}
+      key_name: {{ required "observerSignals.config.keyName is required" .Values.observerSignals.config.keyName | quote }}
+      request_rate: {{ .Values.observerSignals.config.requestRate }}
+      request_timeout: {{ .Values.observerSignals.config.requestTimeout | quote }}
+      warmup_probe_interval: {{ .Values.observerSignals.config.warmupProbeInterval | quote }}
+      warmup_timeout: {{ .Values.observerSignals.config.warmupTimeout | quote }}
+      attributes:
+        {{- if not .Values.observerSignals.config.attributes }}
+        {{- fail "observerSignals.config.attributes must be a non-empty list of \"<group>_v<version>:<attribute>\" names" }}
+        {{- end }}
+        {{- range .Values.observerSignals.config.attributes }}
+        - {{ . | quote }}
+        {{- end }}
+
+  external-observer-signals.yaml: |
+    type: "external"
+    name: {{ .Values.observerSignals.config.name | quote }}
+    config:
+      timeout: "30s"
+      underlying_type: "signals-api"
+  {{- end }}
