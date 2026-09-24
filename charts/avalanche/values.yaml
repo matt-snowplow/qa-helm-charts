@@ -671,6 +671,68 @@ aws:
 # cloudserviceaccount.deploy is true (e.g. DS4) the pod reuses that
 # ServiceAccount for its Timestream IRSA role; otherwise (sandbox/local) it
 # runs under the default ServiceAccount with AWS creds injected via aws.*.
+# Signals API observer (QA-1291). Polls the Snowplow Signals
+# get-online-attributes API and records request latency, outcome and attribute
+# values to the signals_api_monitoring measurement.
+#
+# Supplementary observer: it takes no part in correlation and never gates the
+# run. A Signals outage, an expired console token or a slow response degrades
+# the recorded metric, it does not fail the load test (QA-1121).
+#
+# It MUST be pointed at the in-cluster Signals service, not the external
+# ingress. The same call over the ingress carries TLS and network overhead that
+# swamps the measurement (~111ms vs 5-10ms in-cluster, QA-1287).
+#
+# Reuses the cloudserviceaccount IRSA role for Timestream access, as
+# observer-prometheus does.
+observerSignals:
+  enabled: false
+  image:
+    repository: avalanche-observer-private
+    tag: latest
+  replicas: 1
+  componentId: "signals-api-observer"
+  config:
+    type: "signals-api"
+    name: "signals-api-observer"
+    # In-cluster Signals Go server, e.g.
+    # http://svc-<env>-signals-go.<namespace>.svc.cluster.local:8080
+    baseURL: ""
+    # Console host the M2M bearer token is minted from.
+    consoleURL: "https://console.snowplowanalytics.com"
+    # MUST match the injector's generator.signalsRunID. Both sides compute
+    # entity ids independently via EntityID(run_id, index) with no runtime
+    # discovery channel between them (QA-1289); a mismatch yields a run in
+    # which every read is null and nothing says why.
+    runID: ""
+    # MUST match the injector's generator.signalsPoolSize. The observer reads
+    # round-robin over [0, poolSize).
+    poolSize: 0
+    # The run-scoped Signals attribute key to read by.
+    keyName: ""
+    # Fully-qualified attribute names, "<group>_v<version>:<attribute>".
+    attributes: []
+    # Requests per second during the measurement phase.
+    requestRate: 10
+    requestTimeout: "10s"
+    warmupProbeInterval: "1s"
+    warmupTimeout: "120s"
+  # Console credentials. Rendered into a Secret and delivered via envFrom, so
+  # they never appear in a rendered values file or config map. Leave empty in
+  # values and supply from the deployer.
+  credentials:
+    orgId: ""
+    apiKey: ""
+    apiKeyId: ""
+  # Preset-independent plain resource block (does not use sizingPreset).
+  resources:
+    requests:
+      memory: "128Mi"
+      cpu: "100m"
+    limits:
+      memory: "512Mi"
+      cpu: "500m"
+
 observerPrometheus:
   enabled: false
   image:
