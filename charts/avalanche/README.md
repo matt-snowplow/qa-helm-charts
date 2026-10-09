@@ -54,6 +54,28 @@ presets:
 
 The chart resolves preset values via the `avalanche.componentResources`, `avalanche.componentReplicas`, and `avalanche.injectorWorkers` helpers in `templates/_helpers.tpl`.
 
+## http injector requests
+
+From 0.16.0 the chart passes `injector.config.headers` and `injector.config.requests` through to the injector config verbatim, for the `http` injector type (avalanche 0.21.0 or later). Without them the injector sends its legacy fixed POST to `endpoint`, and every other injector type renders exactly as before.
+
+```yaml
+injector:
+  config:
+    type: "http"
+    endpoint: "http://iglu.example.com"
+    headers:
+      apikey: "<key>"
+    requests:
+      - method: GET
+        path: /api/schemas/com.acme/click/jsonschema/1-0-0
+        weight: 3
+      - method: GET
+        path: /api/schemas/com.acme/view/jsonschema/1-0-0
+        weight: 1
+```
+
+Keys, defaults, header precedence and validation are documented in avalanche `docs/HTTP_INJECTOR.md`. The chart does no validation of its own: a bad value fails when the injector starts, with an error naming the key.
+
 ## Background
 
 The pre-0.3.0 chart shipped a single set of resource defaults sized for demos, not for load generation. At 500 RPS the injector OOMKilled, took a heartbeat-miss restart, then fell off the NATS rate update. Consumers (snowman sandbox path, DS4 collector tests) carried per-field overrides in their own values.yaml templates to work around this. Presets centralise the sizing decision in the chart so consumers can pick a preset and stop carrying overrides — see ticket QA-780 for the full design and the calibration data behind these numbers.

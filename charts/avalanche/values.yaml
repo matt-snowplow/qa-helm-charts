@@ -278,6 +278,19 @@ injector:
     timeout: "5s"
     # Skip TLS certificate verification (useful for testing with self-signed certs)
     insecureSkipVerify: false
+    # http injector type only (avalanche >= 0.21.0). Both are rendered verbatim;
+    # leave unset for the legacy fixed POST to `endpoint`. See avalanche
+    # docs/HTTP_INJECTOR.md for keys, defaults and validation.
+    # headers:                    # sent on every request
+    #   apikey: ""
+    # requests:                   # picked at random in proportion to weight
+    #   - method: GET             # GET/POST/PUT/DELETE/HEAD/PATCH (default POST)
+    #     path: /api/schemas/com.acme/click/jsonschema/1-0-0   # appended to endpoint
+    #     weight: 3               # default 1
+    #   - method: POST
+    #     path: /api/schemas
+    #     headers: {}             # per-request; overrides top-level headers
+    #     body: "{}"              # omit for a bodyless request
     # Generator config for snowplow injector type (go-event-generator)
     # generator:
     #   preset: "typical-web"

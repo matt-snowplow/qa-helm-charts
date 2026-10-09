@@ -61,6 +61,17 @@ data:
       {{- if .Values.injector.config.insecureSkipVerify }}
       insecure_skip_verify: {{ .Values.injector.config.insecureSkipVerify }}
       {{- end }}
+      {{- /* http injector only (avalanche >= 0.21.0): rendered verbatim, so the
+             injector's own validation reports any bad key by name. Absent or
+             empty renders nothing, keeping every other injector unchanged. */}}
+      {{- with .Values.injector.config.headers }}
+      headers:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.injector.config.requests }}
+      requests:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       {{- if .Values.injector.config.generator }}
       generator:
         {{- if .Values.injector.config.generator.preset }}
