@@ -396,6 +396,15 @@ data:
           {{- if .streamName }}
           stream_name: {{ .streamName | quote }}
           {{- end }}
+          {{- /* QA-1473: identifiers for the rds_instance and ec2_asg kinds. Like
+                 streamName they sit outside the container_insights branch, so
+                 those targets get no pod-name fields. */}}
+          {{- if .dbInstanceIdentifier }}
+          db_instance_identifier: {{ .dbInstanceIdentifier | quote }}
+          {{- end }}
+          {{- if .autoScalingGroupName }}
+          auto_scaling_group_name: {{ .autoScalingGroupName | quote }}
+          {{- end }}
         {{- end }}
 
   external-observer-kubernetes-cloudwatch.yaml: |

@@ -812,9 +812,15 @@ observerKubernetes:
     # rbac.scope=namespace (see rbac.scope above).
     enabled: true
   cloudwatch:
-    # CloudWatch observer (QA-824 + QA-828): reads pod-level Container Insights
-    # metrics and/or AWS/Kinesis stream metrics via IRSA. See targets[].kind for
-    # which AWS namespace each target observes.
+    # CloudWatch observer (QA-824 + QA-828 + QA-1473): reads pod-level Container
+    # Insights metrics, AWS/Kinesis stream metrics, AWS/RDS instance metrics
+    # and/or CloudWatch-agent host metrics per Auto Scaling group, via IRSA.
+    # targets[].kind selects the AWS namespace, and each kind needs its own
+    # identifier field:
+    #   container_insights -> clusterName + namespace
+    #   kinesis_stream     -> streamName
+    #   rds_instance       -> dbInstanceIdentifier
+    #   ec2_asg            -> autoScalingGroupName (agent must aggregate to it)
     enabled: false
     pollInterval: "60s"  # CloudWatch resolution floor is 60s
     targets: []
@@ -838,6 +844,12 @@ observerKubernetes:
     # - kind: kinesis_stream
     #   region: "eu-central-1"
     #   streamName: "kns-com-snplow-qa-aws-qa-...-raw"
+    # - kind: rds_instance
+    #   region: "eu-central-1"
+    #   dbInstanceIdentifier: "qa-...-iglu-rds-..."
+    # - kind: ec2_asg
+    #   region: "eu-central-1"
+    #   autoScalingGroupName: "qa-...-iglu-server-..."
   image:
     repository: avalanche-observer-private
     tag: kubernetes
