@@ -3,6 +3,36 @@ entries:
   avalanche:
   - apiVersion: v2
     appVersion: 1.0.0
+    created: "2026-10-20T19:32:49.402461771Z"
+    dependencies:
+    - name: dockerconfigjson
+      repository: https://snowplow-devops.github.io/helm-charts
+      version: 0.1.0
+    - name: cloudserviceaccount
+      repository: https://snowplow-devops.github.io/helm-charts
+      version: 0.3.0
+    description: A Helm chart for Avalanche - Progressive load testing framework for
+      Snowplow infrastructure
+    digest: 7c08ae371ea66e4809ca8c6180d8622737500c7cbc7607e56ccf35aef2d0510c
+    home: https://github.com/snowplow-devops/avalanche
+    icon: https://raw.githubusercontent.com/snowplow-devops/helm-charts/master/docs/logo/snowplow.png
+    keywords:
+    - avalanche
+    - load-testing
+    - snowplow
+    - performance
+    maintainers:
+    - email: support@snowplow.io
+      name: Snowplow Analytics
+    name: avalanche
+    sources:
+    - https://github.com/snowplow-devops/avalanche
+    type: application
+    urls:
+    - https://github.com/matt-snowplow/qa-helm-charts/releases/download/avalanche-0.18.0/avalanche-0.18.0.tgz
+    version: 0.18.0
+  - apiVersion: v2
+    appVersion: 1.0.0
     created: "2026-10-16T11:14:05.886612813Z"
     dependencies:
     - name: dockerconfigjson
@@ -511,4 +541,4 @@ entries:
     urls:
     - https://github.com/matt-snowplow/qa-helm-charts/releases/download/avalanche-0.6.3/avalanche-0.6.3.tgz
     version: 0.6.3
-generated: "2026-10-16T11:14:05.886758084Z"
+generated: "2026-10-20T19:32:49.402586572Z"
