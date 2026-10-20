@@ -649,6 +649,64 @@ aggregatorKinesisStream:
       memory: "256Mi"
       cpu: "500m"
 
+# Signals API rollup (QA-1293). Writes the signals_api_monitoring_window/_phase/_run
+# tables that signals_api_monitoring_* CEL rules read. Renders only when
+# observerSignals is enabled too: the signals-api observer is this measurement's
+# only writer.
+aggregatorSignals:
+  enabled: false
+  image:
+    repository: avalanche-aggregator-private
+    tag: latest
+  replicas: 1
+  componentId: "signals-api-aggregator"
+  config:
+    type: "metrics-aggregator"
+    name: "signals-api-aggregator"
+    sourceMeasurement: "signals_api_monitoring"
+    # Measurement reads only. Freshness intervals describe the injector's write
+    # period until QA-926 defines a gateable freshness, and warm-up reads are
+    # cold by design.
+    sourceFilter:
+      mode: measurement
+    outputMeasurements:
+      window: "signals_api_monitoring_window"
+      phase: "signals_api_monitoring_phase"
+      run: "signals_api_monitoring_run"
+    windowDuration: "30s"  # ~300 reads per window at the observer's 10 RPS default
+    # No `outcome`: the error rate comes from the numeric is_* fields, not from
+    # one series per outcome.
+    groupBy:
+      - run_id
+      - phase_id
+    fields:
+      # Every read, errors and timeouts included.
+      request_latency_ms:
+        - p50
+        - p90
+        - p99
+        - max
+        - count
+      # ok reads only: the observer writes it on nothing else.
+      ok_latency_ms:
+        - p50
+        - p90
+        - p99
+        - max
+      is_error:
+        - mean
+        - sum
+      is_null_unexpected:
+        - mean
+        - sum
+  resources:
+    requests:
+      memory: "64Mi"
+      cpu: "100m"
+    limits:
+      memory: "256Mi"
+      cpu: "500m"
+
 # Database configuration (optional)
 database:
   # Database type: memory, influxdb, timestream
