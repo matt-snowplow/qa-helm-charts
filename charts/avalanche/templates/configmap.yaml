@@ -247,6 +247,37 @@ data:
         {{- end }}
   {{- end }}
 
+  # Only alongside observerSignals, the measurement's only writer.
+  {{- if and .Values.aggregatorSignals.enabled .Values.observerSignals.enabled }}
+  aggregator-signals.yaml: |
+    type: {{ .Values.aggregatorSignals.config.type | quote }}
+    name: {{ .Values.aggregatorSignals.config.name | quote }}
+    config:
+      source_measurement: {{ .Values.aggregatorSignals.config.sourceMeasurement | quote }}
+      output_measurements:
+        window: {{ .Values.aggregatorSignals.config.outputMeasurements.window | quote }}
+        phase: {{ .Values.aggregatorSignals.config.outputMeasurements.phase | quote }}
+        run: {{ .Values.aggregatorSignals.config.outputMeasurements.run | quote }}
+      window_duration: {{ .Values.aggregatorSignals.config.windowDuration | quote }}
+      {{- with .Values.aggregatorSignals.config.sourceFilter }}
+      source_filter:
+        {{- range $tag, $value := . }}
+        {{ $tag }}: {{ $value | quote }}
+        {{- end }}
+      {{- end }}
+      group_by:
+        {{- range .Values.aggregatorSignals.config.groupBy }}
+        - {{ . }}
+        {{- end }}
+      fields:
+        {{- range $field, $aggs := .Values.aggregatorSignals.config.fields }}
+        {{ $field }}:
+          {{- range $aggs }}
+          - {{ . }}
+          {{- end }}
+        {{- end }}
+  {{- end }}
+
   # External stub configurations for Kubernetes test orchestration
   # These are used by the controller to coordinate with external component pods
   # Generated in both modes
