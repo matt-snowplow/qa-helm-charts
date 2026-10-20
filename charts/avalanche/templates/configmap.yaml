@@ -247,7 +247,7 @@ data:
         {{- end }}
   {{- end }}
 
-  # QA-1293: only alongside observerSignals, the measurement's only writer.
+  # Only alongside observerSignals, the measurement's only writer.
   {{- if and .Values.aggregatorSignals.enabled .Values.observerSignals.enabled }}
   aggregator-signals.yaml: |
     type: {{ .Values.aggregatorSignals.config.type | quote }}

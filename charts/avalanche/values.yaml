@@ -649,7 +649,7 @@ aggregatorKinesisStream:
       memory: "256Mi"
       cpu: "500m"
 
-# Signals API rollup (QA-1293). Writes the signals_api_monitoring_window/_phase/_run
+# Signals API rollup. Writes the signals_api_monitoring_window/_phase/_run
 # tables that signals_api_monitoring_* CEL rules read. Renders only when
 # observerSignals is enabled too: the signals-api observer is this measurement's
 # only writer.
@@ -665,8 +665,7 @@ aggregatorSignals:
     name: "signals-api-aggregator"
     sourceMeasurement: "signals_api_monitoring"
     # Measurement reads only. Freshness intervals describe the injector's write
-    # period until QA-926 defines a gateable freshness, and warm-up reads are
-    # cold by design.
+    # period rather than Signals, and warm-up reads are cold by design.
     sourceFilter:
       mode: measurement
     outputMeasurements:
