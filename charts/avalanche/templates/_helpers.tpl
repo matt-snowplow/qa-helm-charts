@@ -133,6 +133,29 @@ Usage:
 {{- end }}
 
 {{/*
+Resolve component affinity: a non-empty `<component>.affinity` replaces (does
+not merge with) `.Values.harnessAffinity`; with both empty this renders nothing.
+Wrap the call in `with` so an unset affinity leaves no `affinity:` key or blank
+line in the pod spec.
+
+Usage:
+      {{- with (include "avalanche.componentAffinity" (dict "ctx" . "component" "injector")) }}
+      affinity:
+        {{- . | nindent 8 }}
+      {{- end }}
+*/}}
+{{- define "avalanche.componentAffinity" -}}
+{{- $ctx := .ctx -}}
+{{- $component := .component -}}
+{{- $override := (index $ctx.Values $component "affinity") | default dict -}}
+{{- if gt (len $override) 0 -}}
+{{- toYaml $override -}}
+{{- else if $ctx.Values.harnessAffinity -}}
+{{- toYaml $ctx.Values.harnessAffinity -}}
+{{- end -}}
+{{- end }}
+
+{{/*
 Resolve component replicas: per-component override wins (any non-zero integer),
 otherwise the value from the active sizing preset.
 

@@ -76,6 +76,25 @@ injector:
 
 Keys, defaults, header precedence and validation are documented in avalanche `docs/HTTP_INJECTOR.md`. The chart does no validation of its own: a bad value fails when the injector starts, with an error naming the key.
 
+## Harness affinity
+
+From 0.19.0, `harnessAffinity` sets a Kubernetes `affinity` on every harness Deployment: nats, injector, all observers, correlator, adjudicator, controller, the aggregators and mockTarget. mockTarget counts as harness because it is a downstream sink (for example, a Snowbridge HTTP target's destination) and loads whichever node it lands on. A non-empty `<component>.affinity` replaces it for that one component; the two are not merged. Only the fluent-bit DaemonSet is left alone, since it must run on every node. With both values unset the chart renders exactly as 0.18.0 did.
+
+Harness pods that land on the system under test's node inflate its measured CPU. To keep them off it, set a pod anti-affinity on its labels:
+
+```yaml
+harnessAffinity:
+  podAntiAffinity:
+    requiredDuringSchedulingIgnoredDuringExecution:
+      - labelSelector:
+          matchLabels:
+            app.kubernetes.io/name: snowbridge
+        namespaces: ["<its namespace>"]   # omit if it shares the release namespace
+        topologyKey: kubernetes.io/hostname
+```
+
+A `required` rule leaves harness pods `Pending` if the cluster has no other node with room for them; use `preferredDuringSchedulingIgnoredDuringExecution` where that matters more than a clean measurement.
+
 ## Background
 
 The pre-0.3.0 chart shipped a single set of resource defaults sized for demos, not for load generation. At 500 RPS the injector OOMKilled, took a heartbeat-miss restart, then fell off the NATS rate update. Consumers (snowman sandbox path, DS4 collector tests) carried per-field overrides in their own values.yaml templates to work around this. Presets centralise the sizing decision in the chart so consumers can pick a preset and stop carrying overrides — see ticket QA-780 for the full design and the calibration data behind these numbers.
