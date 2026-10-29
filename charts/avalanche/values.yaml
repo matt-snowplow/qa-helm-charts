@@ -178,6 +178,26 @@ presets:
         requests: { cpu: "500m", memory: "512Mi" }
         limits:   { cpu: "2000m", memory: "2Gi" }
 
+# Kubernetes affinity for every harness Deployment: nats, injector, all
+# observers, correlator, adjudicator, controller, the aggregators and
+# mockTarget (a downstream sink, e.g. for a Snowbridge HTTP target, so it loads
+# whichever node it lands on like any other harness pod). A non-empty
+# `<component>.affinity` replaces it for that component (no merge). Not applied
+# to the fluent-bit DaemonSet, which must run on every node.
+#
+# Harness pods that share a node with the system under test inflate its
+# measured CPU, so a perf test usually keeps them off its node:
+#
+# harnessAffinity:
+#   podAntiAffinity:
+#     requiredDuringSchedulingIgnoredDuringExecution:
+#       - labelSelector:
+#           matchLabels:
+#             app.kubernetes.io/name: snowbridge   # the system under test's pod labels
+#         namespaces: ["<its namespace>"]          # omit if it shares the release namespace
+#         topologyKey: kubernetes.io/hostname
+harnessAffinity: {}
+
 # Cloud service account configuration (OIDC-based IAM integration)
 cloudserviceaccount:
   # Whether to create a service-account
@@ -234,6 +254,8 @@ nats:
     type: ClusterIP
     clientPort: 4222
     monitoringPort: 8222
+  # {} = inherit harnessAffinity; set to replace it for this component.
+  affinity: {}
 
 # Injector configuration
 injector:
@@ -317,6 +339,8 @@ injector:
     #                             # with no runtime discovery channel between them.
   # {} = inherit from sizingPreset; set requests/limits to override.
   resources: {}
+  # {} = inherit harnessAffinity; set to replace it for this component.
+  affinity: {}
 
 # Observer configuration
 observer:
@@ -338,6 +362,8 @@ observer:
     # region: ""     # AWS region
   # {} = inherit from sizingPreset; set requests/limits to override.
   resources: {}
+  # {} = inherit harnessAffinity; set to replace it for this component.
+  affinity: {}
 
 # Mock Target configuration (self-contained testing without external collector)
 mockTarget:
@@ -354,6 +380,8 @@ mockTarget:
     limits:
       memory: "256Mi"
       cpu: "500m"
+  # {} = inherit harnessAffinity; set to replace it for this component.
+  affinity: {}
 
 # Correlator configuration
 correlator:
@@ -379,6 +407,8 @@ correlator:
     port: 8090
   # {} = inherit from sizingPreset; set requests/limits to override.
   resources: {}
+  # {} = inherit harnessAffinity; set to replace it for this component.
+  affinity: {}
 
 # Adjudicator configuration
 adjudicator:
@@ -402,6 +432,8 @@ adjudicator:
       correlation_rate >= 0.95 && error_rate <= 0.05
   # {} = inherit from sizingPreset; set requests/limits to override.
   resources: {}
+  # {} = inherit harnessAffinity; set to replace it for this component.
+  affinity: {}
 
 # Controller configuration
 controller:
@@ -439,6 +471,8 @@ controller:
     tlsSecretName: ""
   # {} = inherit from sizingPreset; set requests/limits to override.
   resources: {}
+  # {} = inherit harnessAffinity; set to replace it for this component.
+  affinity: {}
 
 # Aggregator configuration (injection timing metrics)
 aggregator:
@@ -478,6 +512,8 @@ aggregator:
         - max
   # {} = inherit from sizingPreset; set requests/limits to override.
   resources: {}
+  # {} = inherit harnessAffinity; set to replace it for this component.
+  affinity: {}
 
 # Kubernetes Monitoring Aggregator configuration (Phase 12.3)
 # Aggregates kubernetes_monitoring metrics into window/phase/run statistics
@@ -552,11 +588,20 @@ aggregatorKubernetes:
       error_event_count:
         - last
         - max
-      # CloudWatch-mode fields (QA-822). The CW observer writes percent-of-limit
-      # and percent-of-cluster fields; these aren't produced by the api-mode
-      # observer, but adding them to the aggregator's whitelist is harmless
-      # there (missing fields aggregate to zero) and makes both observer
-      # paths feed equivalent (entity × phase) rows.
+      # Percent-of-limit / percent-of-cluster fields (QA-822 CloudWatch; QA-1271
+      # added percent-of-limit to the api-mode observer too, so both observer
+      # paths now feed equivalent (entity × phase) rows and a rule written
+      # against a percentage works whichever source fed the row).
+      #
+      # QA-1271 correction: an absent field does NOT "aggregate to zero" as this
+      # comment used to claim. computeStats skips any field with no values
+      # (`len(values) == 0 -> continue`) and the Timestream source only populates
+      # a field when the column is non-NULL, so a field absent from every source
+      # row is OMITTED from the rollup entirely — no _mean/_last is emitted, and
+      # a rule referencing it sees a missing field rather than a zero. That is
+      # deliberate: it keeps "no limit configured" distinguishable from "a limit
+      # of zero", which is what made the old `_limit_* == 0.0 ||` rule guards
+      # pass vacuously.
       cpu_usage_percent_of_limit:
         - mean
         - max
@@ -586,6 +631,8 @@ aggregatorKubernetes:
         - sum
   # {} = inherit from sizingPreset; set requests/limits to override.
   resources: {}
+  # {} = inherit harnessAffinity; set to replace it for this component.
+  affinity: {}
 
 # Kinesis Stream Aggregator configuration (QA-827 Phase 2)
 # Aggregates kinesis_stream_monitoring per-stream rows into (stream × phase)
@@ -648,6 +695,8 @@ aggregatorKinesisStream:
     limits:
       memory: "256Mi"
       cpu: "500m"
+  # {} = inherit harnessAffinity; set to replace it for this component.
+  affinity: {}
 
 # Signals API rollup. Writes the signals_api_monitoring_window/_phase/_run
 # tables that signals_api_monitoring_* CEL rules read. Renders only when
@@ -705,6 +754,8 @@ aggregatorSignals:
     limits:
       memory: "256Mi"
       cpu: "500m"
+  # {} = inherit harnessAffinity; set to replace it for this component.
+  affinity: {}
 
 # Database configuration (optional)
 database:
@@ -802,6 +853,8 @@ observerSignals:
     limits:
       memory: "512Mi"
       cpu: "500m"
+  # {} = inherit harnessAffinity; set to replace it for this component.
+  affinity: {}
 
 observerPrometheus:
   enabled: false
@@ -831,6 +884,8 @@ observerPrometheus:
     limits:
       cpu: "500m"
       memory: "256Mi"
+  # {} = inherit harnessAffinity; set to replace it for this component.
+  affinity: {}
 
 # Kubernetes Infrastructure Observer configuration (Phase 12.1 + QA-822)
 observerKubernetes:
@@ -959,6 +1014,8 @@ observerKubernetes:
     iamRoleArn: ""
   # {} = inherit from sizingPreset; set requests/limits to override.
   resources: {}
+  # {} = inherit harnessAffinity; set to replace it for this component.
+  affinity: {}
 
 # Logging configuration
 logging:

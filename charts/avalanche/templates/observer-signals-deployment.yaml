@@ -31,6 +31,10 @@ spec:
         {{- include "avalanche.selectorLabels" . | nindent 8 }}
         app.kubernetes.io/component: observer-signals
     spec:
+      {{- with (include "avalanche.componentAffinity" (dict "ctx" . "component" "observerSignals")) }}
+      affinity:
+        {{- . | nindent 8 }}
+      {{- end }}
       {{- $sa := include "avalanche.observerSignals.serviceAccountName" . }}
       {{- if $sa }}
       serviceAccountName: {{ $sa }}
