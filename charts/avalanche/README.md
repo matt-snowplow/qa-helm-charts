@@ -95,6 +95,10 @@ harnessAffinity:
 
 A `required` rule leaves harness pods `Pending` if the cluster has no other node with room for them; use `preferredDuringSchedulingIgnoredDuringExecution` where that matters more than a clean measurement.
 
+## Observer binary healthcheck
+
+From 0.20.0, `observer.binaryHealthcheck` (default `true`) makes the observer's liveness and readiness probes exec `/opt/snowplow/avalanche healthcheck --url http://<release>-nats:8222/healthz` instead of `/bin/sh -c "wget -q --spider ..."`. The check is the same, a GET to the NATS monitor endpoint, but the image no longer needs a shell or busybox, so the observer can run on a distroless base. The `healthcheck` subcommand ships in avalanche 0.36.0. With an older observer image, set `observer.binaryHealthcheck: false`; the chart then renders exactly as 0.19.0 did. Other components keep the `/bin/sh` probes for now.
+
 ## Background
 
 The pre-0.3.0 chart shipped a single set of resource defaults sized for demos, not for load generation. At 500 RPS the injector OOMKilled, took a heartbeat-miss restart, then fell off the NATS rate update. Consumers (snowman sandbox path, DS4 collector tests) carried per-field overrides in their own values.yaml templates to work around this. Presets centralise the sizing decision in the chart so consumers can pick a preset and stop carrying overrides — see ticket QA-780 for the full design and the calibration data behind these numbers.

@@ -67,9 +67,16 @@ spec:
           livenessProbe:
             exec:
               command:
+{{- if .Values.observer.binaryHealthcheck }}
+                - /opt/snowplow/avalanche
+                - healthcheck
+                - --url
+                - http://{{ include "avalanche.fullname" . }}-nats:8222/healthz
+{{- else }}
                 - /bin/sh
                 - -c
                 - wget -q --spider http://{{ include "avalanche.fullname" . }}-nats:8222/healthz
+{{- end }}
             initialDelaySeconds: 10
             periodSeconds: 30
             timeoutSeconds: 5
@@ -78,9 +85,16 @@ spec:
           readinessProbe:
             exec:
               command:
+{{- if .Values.observer.binaryHealthcheck }}
+                - /opt/snowplow/avalanche
+                - healthcheck
+                - --url
+                - http://{{ include "avalanche.fullname" . }}-nats:8222/healthz
+{{- else }}
                 - /bin/sh
                 - -c
                 - wget -q --spider http://{{ include "avalanche.fullname" . }}-nats:8222/healthz
+{{- end }}
             initialDelaySeconds: 5
             periodSeconds: 10
             timeoutSeconds: 5

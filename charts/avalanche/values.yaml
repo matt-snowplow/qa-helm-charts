@@ -348,6 +348,10 @@ observer:
   image:
     repository: avalanche-observer-private
     tag: latest
+  # Probes exec `avalanche healthcheck` instead of `/bin/sh -c wget`, so the
+  # observer image needs no shell (distroless). Needs avalanche >= 0.36.0 or the
+  # QA-1628 prototype tag; set false for older observer images.
+  binaryHealthcheck: true
   # 0 = inherit from sizingPreset; set to a non-zero value to override.
   replicas: 0
   componentId: "k8s-observer"
