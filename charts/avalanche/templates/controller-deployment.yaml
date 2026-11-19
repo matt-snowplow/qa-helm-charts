@@ -19,6 +19,13 @@ spec:
         {{- include "snowplow.labels" . | nindent 8 }}
         {{- include "avalanche.selectorLabels" . | nindent 8 }}
         app.kubernetes.io/component: orchestration
+        {{- with (include "avalanche.disruptionPodLabels" .) }}
+        {{- . | nindent 8 }}
+        {{- end }}
+      {{- with (include "avalanche.disruptionPodAnnotations" .) }}
+      annotations:
+        {{- . | nindent 8 }}
+      {{- end }}
     spec:
       {{- with (include "avalanche.componentAffinity" (dict "ctx" . "component" "controller")) }}
       affinity:
