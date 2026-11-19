@@ -156,6 +156,27 @@ Usage:
 {{- end }}
 
 {{/*
+Pod template label and annotation for harnessDisruptionProtection. Each emits
+nothing when it is disabled, so wrap the include in `with`:
+      {{- with (include "avalanche.disruptionPodAnnotations" .) }}
+      annotations:
+        {{- . | nindent 8 }}
+      {{- end }}
+The label is what the <fullname>-harness PodDisruptionBudget selects on.
+*/}}
+{{- define "avalanche.disruptionPodLabels" -}}
+{{- if .Values.harnessDisruptionProtection.enabled -}}
+avalanche.snowplow.io/disruption-protected: "true"
+{{- end -}}
+{{- end }}
+
+{{- define "avalanche.disruptionPodAnnotations" -}}
+{{- if .Values.harnessDisruptionProtection.enabled -}}
+cluster-autoscaler.kubernetes.io/safe-to-evict: "false"
+{{- end -}}
+{{- end }}
+
+{{/*
 Resolve component replicas: per-component override wins (any non-zero integer),
 otherwise the value from the active sizing preset.
 
