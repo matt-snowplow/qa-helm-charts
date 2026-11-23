@@ -198,6 +198,38 @@ presets:
 #         topologyKey: kubernetes.io/hostname
 harnessAffinity: {}
 
+# Protect the harness from voluntary disruption for the length of a run. The
+# shared cluster's node group is scaled in by cluster-autoscaler and rebalanced
+# across zones by the ASG; either drains the node and evicts its pods, and
+# losing the controller or an observer mid-run loses the run. When enabled,
+# every harness Deployment (the same set harnessAffinity covers, not the
+# fluent-bit DaemonSet) gets:
+#   - the pod annotation cluster-autoscaler.kubernetes.io/safe-to-evict: "false",
+#     so cluster-autoscaler does not pick its node for scale-in;
+#   - the pod label avalanche.snowplow.io/disruption-protected: "true", selected
+#     by one PodDisruptionBudget <fullname>-harness with maxUnavailable: 0.
+# A PodDisruptionBudget blocks cluster-autoscaler, but a managed node group
+# drain (e.g. an ASG AZRebalance) only waits until its own timeout and then
+# terminates the node anyway: this narrows the window, it does not close it.
+harnessDisruptionProtection:
+  enabled: false
+
+# A PodDisruptionBudget (maxUnavailable: 0) for the system under test, which
+# runs in the same namespace but is deployed outside this chart, so this chart
+# can only protect it by selector. Renders <fullname>-sut when enabled.
+# matchLabels must select only the system under test's pods: an empty selector
+# would match every pod in the namespace, so the chart refuses to render one.
+# A pod matched by two PodDisruptionBudgets cannot be evicted at all, so do not
+# point this at pods that already have one.
+#
+# systemUnderTestDisruptionBudget:
+#   enabled: true
+#   matchLabels:
+#     app: sp-snowbridge-<env name>   # the Deployment selector of the system under test
+systemUnderTestDisruptionBudget:
+  enabled: false
+  matchLabels: {}
+
 # Cloud service account configuration (OIDC-based IAM integration)
 cloudserviceaccount:
   # Whether to create a service-account
@@ -350,7 +382,7 @@ observer:
     tag: latest
   # Probes exec `avalanche healthcheck` instead of `/bin/sh -c wget`, so the
   # observer image needs no shell (distroless). Needs an observer image with the
-  # healthcheck subcommand (avalanche >= 0.37.0); set false for older images.
+  # healthcheck subcommand (avalanche >= 0.36.0); set false for older images.
   binaryHealthcheck: true
   # 0 = inherit from sizingPreset; set to a non-zero value to override.
   replicas: 0

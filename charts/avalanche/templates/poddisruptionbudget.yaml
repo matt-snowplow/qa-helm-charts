@@ -1,0 +1,38 @@
+{{- if .Values.harnessDisruptionProtection.enabled }}
+# Keeps every harness pod of this release on its node for the run: selects the
+# label avalanche.disruptionPodLabels adds, scoped to this release, so the
+# fluent-bit DaemonSet (which shares avalanche.selectorLabels) is not matched.
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "avalanche.fullname" . }}-harness
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "snowplow.labels" . | nindent 4 }}
+spec:
+  maxUnavailable: 0
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: {{ .Release.Name }}
+      avalanche.snowplow.io/disruption-protected: "true"
+{{- end }}
+{{- if .Values.systemUnderTestDisruptionBudget.enabled }}
+{{- if empty .Values.systemUnderTestDisruptionBudget.matchLabels }}
+{{- fail "systemUnderTestDisruptionBudget.matchLabels must not be empty when systemUnderTestDisruptionBudget.enabled is true: an empty selector matches every pod in the namespace" }}
+{{- end }}
+---
+# Keeps the system under test on its node for the run. It is deployed outside
+# this chart, so it is selected by the caller-supplied labels.
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "avalanche.fullname" . }}-sut
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "snowplow.labels" . | nindent 4 }}
+spec:
+  maxUnavailable: 0
+  selector:
+    matchLabels:
+      {{- toYaml .Values.systemUnderTestDisruptionBudget.matchLabels | nindent 6 }}
+{{- end }}
