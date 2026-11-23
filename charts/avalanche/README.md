@@ -97,7 +97,7 @@ A `required` rule leaves harness pods `Pending` if the cluster has no other node
 
 ## Observer binary healthcheck
 
-From 0.20.0, `observer.binaryHealthcheck` (default `true`) makes the observer's liveness and readiness probes exec `/opt/snowplow/avalanche healthcheck --url http://<release>-nats:8222/healthz` instead of `/bin/sh -c "wget -q --spider ..."`. The check is the same, a GET to the NATS monitor endpoint, but the image no longer needs a shell or busybox, so the observer can run on a distroless base. The `healthcheck` subcommand ships in avalanche 0.36.0. With an older observer image, set `observer.binaryHealthcheck: false`; the chart then renders exactly as 0.19.0 did. Other components keep the `/bin/sh` probes for now.
+From 0.20.0, `observer.binaryHealthcheck` (default `true`) makes the observer's liveness and readiness probes exec `/opt/snowplow/avalanche healthcheck --url http://<release>-nats:8222/healthz` instead of `/bin/sh -c "wget -q --spider ..."`. The check is the same, a GET to the NATS monitor endpoint, but the image no longer needs a shell or busybox, so the observer can run on a distroless base. The `healthcheck` subcommand ships in avalanche 0.37.0. With an older observer image, set `observer.binaryHealthcheck: false`; the chart then renders exactly as 0.19.0 did. Other components keep the `/bin/sh` probes for now.
 
 ## Background
 

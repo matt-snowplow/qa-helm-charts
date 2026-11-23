@@ -350,7 +350,7 @@ observer:
     tag: latest
   # Probes exec `avalanche healthcheck` instead of `/bin/sh -c wget`, so the
   # observer image needs no shell (distroless). Needs an observer image with the
-  # healthcheck subcommand (avalanche >= 0.36.0); set false for older images.
+  # healthcheck subcommand (avalanche >= 0.37.0); set false for older images.
   binaryHealthcheck: true
   # 0 = inherit from sizingPreset; set to a non-zero value to override.
   replicas: 0
