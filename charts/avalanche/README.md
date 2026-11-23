@@ -99,6 +99,28 @@ A `required` rule leaves harness pods `Pending` if the cluster has no other node
 
 From 0.20.0, `observer.binaryHealthcheck` (default `true`) makes the observer's liveness and readiness probes exec `/opt/snowplow/avalanche healthcheck --url http://<release>-nats:8222/healthz` instead of `/bin/sh -c "wget -q --spider ..."`. The check is the same, a GET to the NATS monitor endpoint, but the image no longer needs a shell or busybox, so the observer can run on a distroless base. The `healthcheck` subcommand ships in avalanche 0.36.0. With an older observer image, set `observer.binaryHealthcheck: false`; the chart then renders exactly as 0.19.0 did. Other components keep the `/bin/sh` probes for now.
 
+## Disruption protection
+
+From 0.21.0, two values keep a run's pods on their nodes while the cluster scales in or rebalances. Both default to off, and with both off the chart renders exactly as 0.20.0 did.
+
+`harnessDisruptionProtection.enabled: true` covers every harness Deployment, the same set `harnessAffinity` covers. Each pod gets the annotation `cluster-autoscaler.kubernetes.io/safe-to-evict: "false"` and the label `avalanche.snowplow.io/disruption-protected: "true"`, and one PodDisruptionBudget, `<fullname>-harness`, selects that label within the release with `maxUnavailable: 0`. The fluent-bit DaemonSet is not covered.
+
+`systemUnderTestDisruptionBudget` renders a second PodDisruptionBudget, `<fullname>-sut`, for the system under test. That runs in the same namespace but is deployed outside this chart, so the caller passes its pod selector:
+
+```yaml
+systemUnderTestDisruptionBudget:
+  enabled: true
+  matchLabels:
+    app: sp-snowbridge-<env name>   # the system under test's Deployment selector
+```
+
+An empty selector would match every pod in the namespace, so the chart fails to render if `enabled` is true and `matchLabels` is empty. Don't point it at pods another PodDisruptionBudget already selects: a pod matched by two cannot be evicted at all.
+
+What this protects against:
+
+- **cluster-autoscaler scale-in** is blocked: it won't pick a node holding an annotated pod, or drain one a budget forbids.
+- **A managed node group drain**, such as an ASG AZRebalance, waits for the budget only until its own timeout, then terminates the node anyway. The protection narrows that window; it doesn't close it.
+
 ## Background
 
 The pre-0.3.0 chart shipped a single set of resource defaults sized for demos, not for load generation. At 500 RPS the injector OOMKilled, took a heartbeat-miss restart, then fell off the NATS rate update. Consumers (snowman sandbox path, DS4 collector tests) carried per-field overrides in their own values.yaml templates to work around this. Presets centralise the sizing decision in the chart so consumers can pick a preset and stop carrying overrides — see ticket QA-780 for the full design and the calibration data behind these numbers.
