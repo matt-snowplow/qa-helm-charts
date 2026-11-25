@@ -82,9 +82,7 @@ spec:
           livenessProbe:
             exec:
               command:
-                - /bin/sh
-                - -c
-                - wget -q --spider http://{{ include "avalanche.fullname" . }}-nats:8222/healthz
+                {{- include "avalanche.natsProbeCommand" (dict "ctx" . "override" .Values.correlator.binaryHealthcheck) | nindent 16 }}
             initialDelaySeconds: 10
             periodSeconds: 30
             timeoutSeconds: 5
@@ -93,9 +91,7 @@ spec:
           readinessProbe:
             exec:
               command:
-                - /bin/sh
-                - -c
-                - wget -q --spider http://{{ include "avalanche.fullname" . }}-nats:8222/healthz
+                {{- include "avalanche.natsProbeCommand" (dict "ctx" . "override" .Values.correlator.binaryHealthcheck) | nindent 16 }}
             initialDelaySeconds: 5
             periodSeconds: 10
             timeoutSeconds: 5

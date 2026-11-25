@@ -15,6 +15,14 @@ global:
 # The ConfigMap content is unchanged either way; only the deployment args/env differ.
 legacyMode: true
 
+# Container probes. true (default): every component's liveness and readiness
+# probes exec `/opt/snowplow/avalanche healthcheck --url http://<release>-nats:8222/healthz`,
+# so the images need no shell (distroless). Needs avalanche images >= 0.37.0.
+# false: probes run `/bin/sh -c "wget -q --spider ..."`, for older images. This
+# includes the observer, which 0.20.0-0.21.1 put on the binary probe by default.
+# A component's own `binaryHealthcheck`, when set, overrides this.
+binaryHealthcheck: true
+
 # Sizing preset. Selects per-component CPU/memory/replicas/workers defaults from
 # the `presets:` map below.
 #
@@ -383,10 +391,9 @@ observer:
   image:
     repository: avalanche-observer-private
     tag: latest
-  # Probes exec `avalanche healthcheck` instead of `/bin/sh -c wget`, so the
-  # observer image needs no shell (distroless). Needs an observer image with the
-  # healthcheck subcommand (avalanche >= 0.37.0); set false for older images.
-  binaryHealthcheck: true
+  # Unset: follows the top-level binaryHealthcheck. Set true/false to override
+  # it for the observer only (kept from 0.20.0, when only the observer had it).
+  # binaryHealthcheck: true
   # 0 = inherit from sizingPreset; set to a non-zero value to override.
   replicas: 0
   componentId: "k8s-observer"
