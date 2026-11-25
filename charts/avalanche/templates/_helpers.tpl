@@ -353,11 +353,11 @@ Returns the effective exclude regex, or "" when nothing should be excluded.
 Probe command for a component's liveness/readiness exec probe: a GET to the
 NATS monitor endpoint. With binaryHealthcheck on it execs the avalanche binary's
 healthcheck subcommand (avalanche >= 0.37.0), so the image needs no shell;
-off, it runs /bin/sh -c wget as charts before 0.22.0 did.
+off, it runs /bin/sh -c wget as charts before 0.23.0 did.
 
 The component's own binaryHealthcheck wins when set. Both values are tested for
 nil, not truthiness, so an explicit false is honoured. A missing top-level value
-(e.g. `helm upgrade --reuse-values` from a release before 0.22.0) counts as the
+(e.g. `helm upgrade --reuse-values` from a release before 0.23.0) counts as the
 default, true.
 
 Args: dict "ctx" <root> "override" <component's binaryHealthcheck, may be nil>

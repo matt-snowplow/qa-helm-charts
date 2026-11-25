@@ -19,7 +19,7 @@ legacyMode: true
 # probes exec `/opt/snowplow/avalanche healthcheck --url http://<release>-nats:8222/healthz`,
 # so the images need no shell (distroless). Needs avalanche images >= 0.37.0.
 # false: probes run `/bin/sh -c "wget -q --spider ..."`, for older images. This
-# includes the observer, which 0.20.0-0.21.1 put on the binary probe by default.
+# includes the observer, which 0.20.0-0.22.0 put on the binary probe by default.
 # A component's own `binaryHealthcheck`, when set, overrides this.
 binaryHealthcheck: true
 
