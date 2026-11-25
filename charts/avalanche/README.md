@@ -121,6 +121,16 @@ What this protects against:
 - **cluster-autoscaler scale-in** is blocked: it won't pick a node holding an annotated pod, or drain one a budget forbids.
 - **A managed node group drain**, such as an ASG AZRebalance, waits for the budget only until its own timeout, then terminates the node anyway. The protection narrows that window; it doesn't close it.
 
+## Bad-path runs
+
+From 0.22.0 the chart renders three keys for bad-path load tests:
+
+- `injector.config.generator.schemaViolationRatio` → `schema_violation_ratio`: the share of events, in [0, 1], made to fail Enrich schema validation so they land on the bad stream. Needs avalanche 0.38.0. Unset or `0` renders nothing.
+- `observer.config.source` → `source`: the sink the observed stream is (`enriched`, `bad`). Needs avalanche 0.36.0.
+- `observer.config.badRowTypes` → `bad_row_types`: the bad-row types a `snowplow-bad-kinesis` observer correlates. Needs avalanche 0.39.0.
+
+To observe the bad stream, set `observer.config.type: snowplow-bad-kinesis` and point `streamArn` at Enrich's bad stream. Its `source` defaults to `bad`, so it needs neither of the other observer keys. With none of these set, the chart renders exactly as 0.21.1 did.
+
 ## Background
 
 The pre-0.3.0 chart shipped a single set of resource defaults sized for demos, not for load generation. At 500 RPS the injector OOMKilled, took a heartbeat-miss restart, then fell off the NATS rate update. Consumers (snowman sandbox path, DS4 collector tests) carried per-field overrides in their own values.yaml templates to work around this. Presets centralise the sizing decision in the chart so consumers can pick a preset and stop carrying overrides — see ticket QA-780 for the full design and the calibration data behind these numbers.

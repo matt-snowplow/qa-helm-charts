@@ -94,6 +94,11 @@ data:
         {{- if .Values.injector.config.generator.signalsRunID }}
         signals_run_id: {{ .Values.injector.config.generator.signalsRunID | quote }}
         {{- end }}
+        {{- /* Share of events made to fail Enrich schema validation, in [0, 1].
+               Absent or 0 renders nothing, so the injector's stream is unchanged. */}}
+        {{- if .Values.injector.config.generator.schemaViolationRatio }}
+        schema_violation_ratio: {{ .Values.injector.config.generator.schemaViolationRatio }}
+        {{- end }}
       {{- end }}
   {{- end }}
 
@@ -128,6 +133,15 @@ data:
       {{- end }}
       {{- if .Values.observer.config.region }}
       region: {{ .Values.observer.config.region | quote }}
+      {{- end }}
+      {{- if .Values.observer.config.source }}
+      source: {{ .Values.observer.config.source | quote }}
+      {{- end }}
+      {{- with .Values.observer.config.badRowTypes }}
+      bad_row_types:
+        {{- range . }}
+        - {{ . | quote }}
+        {{- end }}
       {{- end }}
     {{- end }}
   {{- end }}
