@@ -95,9 +95,23 @@ harnessAffinity:
 
 A `required` rule leaves harness pods `Pending` if the cluster has no other node with room for them; use `preferredDuringSchedulingIgnoredDuringExecution` where that matters more than a clean measurement.
 
-## Observer binary healthcheck
+## Binary healthcheck
 
-From 0.20.0, `observer.binaryHealthcheck` (default `true`) makes the observer's liveness and readiness probes exec `/opt/snowplow/avalanche healthcheck --url http://<release>-nats:8222/healthz` instead of `/bin/sh -c "wget -q --spider ..."`. The check is the same, a GET to the NATS monitor endpoint, but the image no longer needs a shell or busybox, so the observer can run on a distroless base. The `healthcheck` subcommand ships in avalanche 0.37.0. With an older observer image, set `observer.binaryHealthcheck: false`; the chart then renders exactly as 0.19.0 did. Other components keep the `/bin/sh` probes for now.
+From 0.22.0, the top-level `binaryHealthcheck` (default `true`) makes every component's liveness and readiness exec probe run `/opt/snowplow/avalanche healthcheck --url http://<release>-nats:8222/healthz` instead of `/bin/sh -c "wget -q --spider ..."`. The check is the same, a GET to the NATS monitor endpoint, but the images no longer need a shell or busybox, so they can run on a distroless base. The controller and mock-target keep their `httpGet` probes, which never needed a shell.
+
+The `healthcheck` subcommand ships in avalanche 0.37.0. With older images, set `binaryHealthcheck: false` and every component, the observer included, uses the shell probe. That matches 0.19.x, or 0.20.0–0.21.1 with `observer.binaryHealthcheck: false`. On 0.20.0–0.21.1 defaults the observer used the binary probe, so to keep that, also set `observer.binaryHealthcheck: true`. A component's own `binaryHealthcheck` (for example `observer.binaryHealthcheck`, which 0.20.0 added for the observer alone) overrides the top-level value for that component when set. Leave it unset to follow the top-level value: an observer set to `false` keeps the shell probe and never goes Ready on a distroless image.
+
+**Upgrading from 0.20.0–0.21.1 with images older than 0.37.0:** if you set only `observer.binaryHealthcheck: false` to keep old images working, that no longer covers the other components. On 0.22.0 they default to the binary probe, fail liveness and restart in a loop. Set the top-level `binaryHealthcheck: false` instead, or move the images to 0.37.0 or later in the same change.
+
+### Debugging a distroless pod
+
+A distroless image has no shell, so `kubectl exec -it <pod> -- sh` fails. Attach an ephemeral debug container that shares the component's process namespace instead:
+
+```bash
+kubectl debug -it <pod> --image=busybox --target=<container>
+```
+
+`--target` names the avalanche container (for example `observer`), so `ps` and `/proc/1/root` show the component's processes and filesystem.
 
 ## Disruption protection
 

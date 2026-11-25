@@ -348,3 +348,37 @@ Returns the effective exclude regex, or "" when nothing should be excluded.
 {{- end -}}
 {{- if and $base $aux -}}({{ $base }})|({{ $aux }}){{- else if $aux -}}{{ $aux }}{{- else -}}{{ $base }}{{- end -}}
 {{- end }}
+
+{{/*
+Probe command for a component's liveness/readiness exec probe: a GET to the
+NATS monitor endpoint. With binaryHealthcheck on it execs the avalanche binary's
+healthcheck subcommand (avalanche >= 0.37.0), so the image needs no shell;
+off, it runs /bin/sh -c wget as charts before 0.22.0 did.
+
+The component's own binaryHealthcheck wins when set. Both values are tested for
+nil, not truthiness, so an explicit false is honoured. A missing top-level value
+(e.g. `helm upgrade --reuse-values` from a release before 0.22.0) counts as the
+default, true.
+
+Args: dict "ctx" <root> "override" <component's binaryHealthcheck, may be nil>
+*/}}
+{{- define "avalanche.natsProbeCommand" -}}
+{{- $binary := true -}}
+{{- if not (kindIs "invalid" .ctx.Values.binaryHealthcheck) -}}
+{{- $binary = .ctx.Values.binaryHealthcheck -}}
+{{- end -}}
+{{- if not (kindIs "invalid" .override) -}}
+{{- $binary = .override -}}
+{{- end -}}
+{{- $url := printf "http://%s-nats:8222/healthz" (include "avalanche.fullname" .ctx) -}}
+{{- if $binary -}}
+- /opt/snowplow/avalanche
+- healthcheck
+- --url
+- {{ $url }}
+{{- else -}}
+- /bin/sh
+- -c
+- wget -q --spider {{ $url }}
+{{- end -}}
+{{- end }}
