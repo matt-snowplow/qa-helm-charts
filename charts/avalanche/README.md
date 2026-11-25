@@ -103,6 +103,8 @@ The `healthcheck` subcommand ships in avalanche 0.37.0. With older images, set `
 
 **Upgrading from 0.20.0–0.21.1 with images older than 0.37.0:** if you set only `observer.binaryHealthcheck: false` to keep old images working, that no longer covers the other components. On 0.22.0 they default to the binary probe, fail liveness and restart in a loop. Set the top-level `binaryHealthcheck: false` instead, or move the images to 0.37.0 or later in the same change.
 
+The same applies to a release first installed from 0.19.x or earlier and upgraded with `helm upgrade --reuse-values`: the reused values have no `binaryHealthcheck` key, and a missing key counts as `true`. With images older than 0.37.0, pass `--set binaryHealthcheck=false` on that upgrade.
+
 ### Debugging a distroless pod
 
 A distroless image has no shell, so `kubectl exec -it <pod> -- sh` fails. Attach an ephemeral debug container that shares the component's process namespace instead:
