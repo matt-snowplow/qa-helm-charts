@@ -369,6 +369,9 @@ injector:
     #                             # the run id the Signals API observer is given: both
     #                             # sides compute entity ids independently from config,
     #                             # with no runtime discovery channel between them.
+    #   schemaViolationRatio: 0   # share of events, in [0, 1], made to fail Enrich
+    #                             # schema validation so they land on the bad stream
+    #                             # (avalanche >= 0.38.0). 0 or unset = none.
   # {} = inherit from sizingPreset; set requests/limits to override.
   resources: {}
   # {} = inherit harnessAffinity; set to replace it for this component.
@@ -396,6 +399,11 @@ observer:
     # For snowplow-kinesis observer type:
     # streamArn: ""  # AWS Kinesis stream ARN
     # region: ""     # AWS region
+    # For the snowplow-*-kinesis observer types (avalanche >= 0.36.0):
+    # source: ""     # sink the stream is, e.g. "enriched" or "bad". Unset for
+    #                # snowplow-bad-kinesis means "bad" (avalanche >= 0.39.0).
+    # For the snowplow-bad-kinesis observer type (avalanche >= 0.39.0):
+    # badRowTypes: []  # bad-row types to correlate; unset = ["schema_violations"]
   # {} = inherit from sizingPreset; set requests/limits to override.
   resources: {}
   # {} = inherit harnessAffinity; set to replace it for this component.
